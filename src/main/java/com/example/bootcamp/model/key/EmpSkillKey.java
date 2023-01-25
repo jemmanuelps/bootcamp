@@ -10,11 +10,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 @PrimaryKeyClass
 public class EmpSkillKey implements Serializable {
     @PrimaryKeyColumn(name = "emp_id", ordinal = 0,

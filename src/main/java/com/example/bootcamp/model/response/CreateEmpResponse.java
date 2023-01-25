@@ -14,12 +14,12 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class CreateEmpResponse extends CreateEmpRequest{
-    String status;
-
-    public CreateEmpResponse(Integer empId, String empName, String empCity, String empPhone, Double javaExp,
-        Double springExp, String status) {
-        super(empId, empName, empCity, empPhone, javaExp, springExp);
-        this.status = status;
-    }
+public class CreateEmpResponse {
+    private Integer empId;
+    private String empName;
+    private String empCity;
+    private String empPhone;
+    private Double javaExp;
+    private Double springExp; 
+    private String status;
 }
