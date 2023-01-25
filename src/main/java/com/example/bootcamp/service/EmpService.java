@@ -16,11 +16,9 @@ import com.example.bootcamp.repository.EmpRepository;
 import com.example.bootcamp.repository.EmpSkillRepository;
 import com.example.bootcamp.util.Utils;
 
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @Service
-@Slf4j
 public class EmpService {
     @Autowired
     EmpRepository empRepository;
