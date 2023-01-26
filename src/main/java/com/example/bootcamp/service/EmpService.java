@@ -1,8 +1,12 @@
 package com.example.bootcamp.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,8 +20,11 @@ import com.example.bootcamp.repository.EmpRepository;
 import com.example.bootcamp.repository.EmpSkillRepository;
 import com.example.bootcamp.util.Utils;
 
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class EmpService {
     @Autowired
@@ -26,11 +33,28 @@ public class EmpService {
     @Autowired
     EmpSkillRepository empSkillRepository;
 
-    public Mono<Boolean> employeeExists(Integer empId) {
-        Utils.loggerInfo("employeeExists", "service", empId);
-        return empRepository.findById(empId)
-            .map(entity -> true)
-            .switchIfEmpty(Mono.just(false));  
+    public Mono<List<CreateEmpResponse>> getEmployeeBySkillset(Double javaExp, Double springExp) {
+        Utils.loggerInfo("getEmployeeBySkillset", "service", javaExp, springExp);
+        
+        return empSkillRepository.findByJavaExp(javaExp)
+                .map(skillSet -> {
+                    var response = new CreateEmpResponse();
+                    response.setEmpId(skillSet.getEmpSkillKey().getEmpId());
+                    response.setJavaExp(skillSet.getEmpSkillKey().getJavaExp());
+                    response.setSpringExp(skillSet.getEmpSkillKey().getSpringExp());
+                    return response;
+                })
+                .map(empResponse -> {
+                    return empRepository.findById(empResponse.getEmpId())
+                        .map(employee -> {
+                            empResponse.setEmpName(employee.getEmpName());
+                            empResponse.setEmpCity(employee.getEmpCity());
+                            empResponse.setEmpPhone(employee.getEmpPhone());
+                            return empResponse;
+                        }).flux();
+                })
+                .flatMap(response -> response)
+                .collectList();
     }
 
     public Mono<CreateEmpResponse> validateCreateEmployee(CreateEmpRequest employee) {  
@@ -54,7 +78,14 @@ public class EmpService {
             });
     }
 
-    public Mono<CreateEmpResponse> createEmployeeAndSkill(CreateEmpRequest employee) {
+    private Mono<Boolean> employeeExists(Integer empId) {
+        Utils.loggerInfo("employeeExists", "service", empId);
+        return empRepository.findById(empId)
+            .map(entity -> true)
+            .switchIfEmpty(Mono.just(false));  
+    }
+
+    private Mono<CreateEmpResponse> createEmployeeAndSkill(CreateEmpRequest employee) {
         Utils.loggerInfo("createEmployeeAndSkill", "service", employee);  
         var savedEmp = new AtomicReference<EmpEntity>();
         var entity = mapRequestToEmpEntity(employee);
@@ -68,7 +99,7 @@ public class EmpService {
             });
     }
 
-    public EmpEntity mapRequestToEmpEntity(CreateEmpRequest employee) {
+    private EmpEntity mapRequestToEmpEntity(CreateEmpRequest employee) {
         Utils.loggerInfo("mapRequestToEmpEntity", "service", employee); 
         var mappedEntity = new EmpEntity();
         mappedEntity.setEmpId(employee.getEmpId());
@@ -78,7 +109,7 @@ public class EmpService {
         return mappedEntity;
     }
 
-    public EmpSkillEntity mapRequestToEmpSkillEntity(CreateEmpRequest request, EmpEntity entity) {
+    private EmpSkillEntity mapRequestToEmpSkillEntity(CreateEmpRequest request, EmpEntity entity) {
         Utils.loggerInfo("mapRequestToEmpSkillEntity", "service", request, entity); 
         var mappedEntity = new EmpSkillEntity();
         var key = new EmpSkillKey(entity.getEmpId(), request.getJavaExp(), request.getSpringExp());
@@ -86,7 +117,7 @@ public class EmpService {
         return mappedEntity;
     }
 
-    public CreateEmpResponse mapToResponseObject(EmpEntity empEntity, EmpSkillEntity empSkillEntity, String status) {
+    private CreateEmpResponse mapToResponseObject(EmpEntity empEntity, EmpSkillEntity empSkillEntity, String status) {
         Utils.loggerInfo("mapRequestToEmpSkillEntity", "service", empEntity, empSkillEntity, status); 
         return new CreateEmpResponse(
             empEntity.getEmpId(),
