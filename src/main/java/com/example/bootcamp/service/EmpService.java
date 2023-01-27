@@ -16,15 +16,13 @@ import com.example.bootcamp.model.entity.EmpSkillEntity;
 import com.example.bootcamp.model.key.EmpSkillKey;
 import com.example.bootcamp.model.request.CreateEmpRequest;
 import com.example.bootcamp.model.response.CreateEmpResponse;
+import com.example.bootcamp.model.response.EmployeeResponse;
 import com.example.bootcamp.repository.EmpRepository;
 import com.example.bootcamp.repository.EmpSkillRepository;
 import com.example.bootcamp.util.Utils;
 
-import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 @Service
 public class EmpService {
     @Autowired
@@ -33,12 +31,13 @@ public class EmpService {
     @Autowired
     EmpSkillRepository empSkillRepository;
 
-    public Mono<List<CreateEmpResponse>> getEmployeeBySkillset(Double javaExp, Double springExp) {
+    public Mono<List<EmployeeResponse>> getEmployeeBySkillset(Double javaExp, Double springExp) {
         Utils.loggerInfo("getEmployeeBySkillset", "service", javaExp, springExp);
-        
-        return empSkillRepository.findByJavaExp(javaExp)
+
+        if (javaExp > 0) {
+            return empSkillRepository.findByJavaExp(javaExp)
                 .map(skillSet -> {
-                    var response = new CreateEmpResponse();
+                    var response = new EmployeeResponse();
                     response.setEmpId(skillSet.getEmpSkillKey().getEmpId());
                     response.setJavaExp(skillSet.getEmpSkillKey().getJavaExp());
                     response.setSpringExp(skillSet.getEmpSkillKey().getSpringExp());
@@ -55,6 +54,27 @@ public class EmpService {
                 })
                 .flatMap(response -> response)
                 .collectList();
+        } else {
+            return empSkillRepository.findBySpringExp(springExp)
+                .map(skillSet -> {
+                    var response = new EmployeeResponse();
+                    response.setEmpId(skillSet.getEmpSkillKey().getEmpId());
+                    response.setJavaExp(skillSet.getEmpSkillKey().getJavaExp());
+                    response.setSpringExp(skillSet.getEmpSkillKey().getSpringExp());
+                    return response;
+                })
+                .map(empResponse -> {
+                    return empRepository.findById(empResponse.getEmpId())
+                        .map(employee -> {
+                            empResponse.setEmpName(employee.getEmpName());
+                            empResponse.setEmpCity(employee.getEmpCity());
+                            empResponse.setEmpPhone(employee.getEmpPhone());
+                            return empResponse;
+                        }).flux();
+                })
+                .flatMap(response -> response)
+                .collectList();
+        }
     }
 
     public Mono<CreateEmpResponse> validateCreateEmployee(CreateEmpRequest employee) {  

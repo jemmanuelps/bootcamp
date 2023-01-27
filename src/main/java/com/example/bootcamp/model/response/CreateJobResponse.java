@@ -11,11 +11,9 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class CreateEmpResponse {
-    private Integer empId;
-    private String empName;
-    private String empCity;
-    private String empPhone;
+public class CreateJobResponse {
+    private Integer jobId;
+    private String jobName;
     private Double javaExp;
     private Double springExp; 
     private String status;
